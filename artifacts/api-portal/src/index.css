@@ -1,0 +1,14 @@
+:root {
+  color-scheme: dark;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: hsl(222, 47%, 11%);
+  color: hsl(213, 31%, 91%);
+  line-height: 1.6;
+}
