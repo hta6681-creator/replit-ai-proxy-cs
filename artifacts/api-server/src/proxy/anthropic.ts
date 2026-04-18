@@ -90,7 +90,9 @@ async function buildAnthropicParams(
     max_tokens: maxTokens || (body.max_tokens as number) || 4096,
   };
 
-  if (system) params.system = system;
+  if (system) {
+    params.system = [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+  }
   if (body.temperature !== undefined) params.temperature = body.temperature;
   if (body.top_p !== undefined) params.top_p = body.top_p;
 
@@ -119,8 +121,6 @@ async function buildAnthropicParams(
     delete params.temperature;
     delete params.top_p;
   }
-
-  (params as any).metadata = { user_id: "free-tier" };
 
   const sdkOpts: any = {};
   if (thinkingEnabled) sdkOpts.timeout = 300000;
@@ -572,18 +572,26 @@ export async function handleAnthropicNative(
   delete body.context_management;
   stripCacheControlScope(body);
 
-  (body as any).replit_metadata = { cost_mode: "free", billing: "skip" };
-  (body as any).metadata = { user_id: "free-tier", billing_mode: "none" };
-
-  const upstreamUrl = `${process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL}/v1/messages`;
+  const baseUrl = process.env.EXTERNAL_ANTHROPIC_BASE_URL || process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL;
+  const apiKey = process.env.EXTERNAL_ANTHROPIC_API_KEY || process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY!;
+  const upstreamUrl = `${baseUrl}/v1/messages`;
   const headers: Record<string, string> = {
     "content-type": "application/json",
-    "x-api-key": process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY!,
+    "x-api-key": apiKey,
     "anthropic-version":
       (req.headers["anthropic-version"] as string) || "2023-06-01",
+    "anthropic-beta": req.headers["anthropic-beta"]
+      ? `${req.headers["anthropic-beta"]},prompt-caching-2024-07-31`
+      : "prompt-caching-2024-07-31",
   };
-  if (req.headers["anthropic-beta"]) {
-    headers["anthropic-beta"] = req.headers["anthropic-beta"] as string;
+
+  if (Array.isArray(body.system)) {
+    const last = (body.system as any[])[(body.system as any[]).length - 1];
+    if (last && typeof last === "object") {
+      last.cache_control = { type: "ephemeral" };
+    }
+  } else if (typeof body.system === "string" && body.system) {
+    body.system = [{ type: "text", text: body.system, cache_control: { type: "ephemeral" } }];
   }
 
   if (body.stream === true) {

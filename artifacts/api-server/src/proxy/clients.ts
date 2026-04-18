@@ -13,13 +13,13 @@ for (const v of requiredVars) {
 }
 
 export const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.EXTERNAL_OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.EXTERNAL_OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
 export const anthropic = new Anthropic({
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.EXTERNAL_ANTHROPIC_BASE_URL || process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+  apiKey: process.env.EXTERNAL_ANTHROPIC_API_KEY || process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
 });
 
 export const openrouter: OpenAI | null =
@@ -31,4 +31,3 @@ export const openrouter: OpenAI | null =
       })
     : null;
 
-export const codebuffAuth: string | null = process.env.CODEBUFF_AUTH || null;

@@ -3,8 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { MODEL_REGISTRY, getModelList } from "../proxy/models.js";
 import { handleOpenAI } from "../proxy/openai.js";
 import { handleAnthropic, handleAnthropicNative } from "../proxy/anthropic.js";
-import { openrouter as openrouterClient, codebuffAuth } from "../proxy/clients.js";
-import { codebuffChatCompletions, finishCodebuffRun } from "../proxy/codebuff.js";
+import { openrouter as openrouterClient } from "../proxy/clients.js";
 import {
   sendError,
   sendAnthropicError,
@@ -92,36 +91,6 @@ router.post(
     }
 
     try {
-      if (codebuffAuth) {
-        const upstream = await codebuffChatCompletions(body, codebuffAuth) as any;
-        const runId = upstream.__runId;
-
-        if (body.stream === true) {
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-          res.flushHeaders();
-          try {
-            const reader = upstream.body.getReader();
-            const decoder = new TextDecoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              res.write(decoder.decode(value, { stream: true }));
-            }
-          } catch {} finally {
-            res.end();
-            await finishCodebuffRun(runId, codebuffAuth);
-          }
-        } else {
-          const data = await upstream.text();
-          await finishCodebuffRun(runId, codebuffAuth);
-          res.setHeader("Content-Type", "application/json");
-          res.end(data);
-        }
-        return;
-      }
-
       if (entry.provider === "openrouter") {
         if (!openrouterClient) {
           return sendError(res, 500, "OpenRouter integration not configured");

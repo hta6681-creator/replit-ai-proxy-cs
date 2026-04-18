@@ -44,9 +44,6 @@ function buildParams(modelEntry: ModelEntry, body: Record<string, unknown>): any
   if (body.tools) params.tools = body.tools;
   if (body.tool_choice) params.tool_choice = body.tool_choice;
 
-  (params as any).replit_metadata = { cost_mode: "free", billing: "skip" };
-  (params as any).metadata = { user_id: "free-tier" };
-
   return params;
 }
 
@@ -104,7 +101,7 @@ async function handleStream(
     params.stream = true;
     params.stream_options = {
       ...((body.stream_options as any) || {}),
-      include_usage: true,
+      include_usage: false,
     };
 
     let stream: any;
@@ -139,6 +136,11 @@ async function handleStream(
       if (!ttftRecorded && chunk.choices?.[0]?.delta?.content) {
         ttftMs = Date.now() - startTime;
         ttftRecorded = true;
+      }
+
+      if (chunk.choices?.[0]?.finish_reason) {
+        controller.abort();
+        break;
       }
 
       if (chunk.usage) streamUsage = chunk.usage;
